@@ -13,17 +13,12 @@ BUILD_STATIC=1
 
 LUA_LIBDIR=/usr/local/lib/
 
-#required for teal
-ARGPARSE_DIR=./extern/argparse
-TEAL_DIR=./extern/tl
 LUAOT_DIR=./extern/luaot
 LUAOT=$(LUAOT_DIR)/src/luaot
-#env for running teal
-TEAL_ENV=LUA_PATH="$(TEAL_DIR)/?.lua;$(TEAL_DIR)/?/init.lua;${ARGPARSE_DIR}/src/?.lua;$(ARGPARSE_DIR)/src/?/init.lua"
 
+TL=tl
 CC=cc
 LD=$(CC)
-TL=$(TEAL_DIR)/tl
 LUA=$(LUAOT_DIR)/src/lua
 
 CFLAGS=-Os
@@ -68,7 +63,7 @@ shared:
 	$(MAKE) release BUILD_STATIC=0
 
 run: debug
-	$(TEAL_ENV) $(LUA) $(TL) run src/$(MAIN_FILE).tl
+	$(TL) run src/$(MAIN_FILE).tl
 
 
 ifneq ($(LUA),$(LUAOT_DIR)/src/lua)
@@ -84,18 +79,10 @@ $(LUAOT):
 	$(MAKE) -C $(LUAOT_DIR) guess
 
 #first, a rule for compiling teal files to lua
-ifneq ($(TL),$(TEAL_DIR)/tl)
 $(GEN_DIR)/%.lua: $(SRC_DIR)/%.tl
-else
-$(GEN_DIR)/%.lua: $(SRC_DIR)/%.tl $(LUAOT)
-endif
 	@printf "\x1b[1;35mTranspiling \x1b[1;32m$<\x1b[1;35m to \x1b[1;32m$@\x1b[0m\n"
 	@mkdir -p $(GEN_DIR)
-ifneq ($(TL),$(TEAL_DIR)/tl)
 	$(TL) -I$(SRC_DIR) $(TLFLAGS) gen $< -o $@
-else
-	$(TEAL_ENV) $(LUA) $(TL) -I$(SRC_DIR) $(TLFLAGS) gen $< -o $@
-endif
 
 #then, a rule for compiling lua files to c, if the file is MAIN_FILE then we need to use the -e -i flags aswell
 #use -m to specify the module name, which should be basename of the file
