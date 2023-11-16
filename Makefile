@@ -11,31 +11,29 @@ MAIN_FILE = main
 #YOU WILL HAVE UNDEFINED AND BUGGY BEHAVIOUR!
 BUILD_STATIC=1
 
-# ifeq ($(BUILD_STATIC),0)
-# #Compare lua versions if $(LUA) is defined, differing lua versions will likley produce a crash
-# 	ifdef LUA
-# 		ifneq ($(shell $(LUA) -v),$(shell extern/luaot/src/lua -v))
-# 			$(error $(LUA) VERSION MISMATCH! LuaOT uses $(shell extern/luaot/src/lua -v), while provided lua uses $(shell $(LUA) -v)!)
-# 			$(error THIS IS LIKLEY TO PRODUCE CRASHES!)
-# 		endif
-# 	endif
-# endif
-
 LUA_LIBDIR=/usr/local/lib/
 
-TEAL=tl
-CC=cc
-LD=$(CC)
-
+#required for teal
+ARGPARSE_DIR=./extern/argparse
+TEAL_DIR=./extern/tl
 LUAOT_DIR=./extern/luaot
 LUAOT=$(LUAOT_DIR)/src/luaot
+#env for running teal
+TEAL_ENV=LUA_PATH="$(TEAL_DIR)/?.lua;$(TEAL_DIR)/?/init.lua;${ARGPARSE_DIR}/src/?.lua;$(ARGPARSE_DIR)/src/?/init.lua"
+
+CC=cc
+LD=$(CC)
+TL=$(TEAL_DIR)/tl
+LUA=$(LUAOT_DIR)/src/lua
 
 CFLAGS=-Os
+LDFLAGS=-flto
 ifeq ($(BUILD_STATIC),1)
-	LDFLAGS=-L$(LUAOT_DIR)/src -llua
+	LDFLAGS += -L$(LUAOT_DIR)/src -llua
 else
-	LDFLAGS=-L$(LUA_LIBDIR) -llua
+	LDFLAGS += -L$(LUA_LIBDIR) -llua
 endif
+
 TLFLAGS=
 LUAOTFLAGS=
 LUAOT_MAIN_FLAGS=-i posix -e
@@ -48,7 +46,7 @@ GENERATED_C_FILES = $(TEAL_FILES:$(SRC_DIR)/%.tl=$(GEN_DIR)/%.c)
 
 OBJECT_FILES = $(GENERATED_C_FILES:$(GEN_DIR)/%.c=$(OBJ_DIR)/%.o)
 
-.PHONY: all clean release debug cfiles objects luaot shared run check-lua
+.PHONY: all clean release debug cfiles objects luaot shared run check-lua teal
 # Just the lua files
 debug: $(GENERATED_LUA_FILES)
 
@@ -58,6 +56,7 @@ clean:
 	$(MAKE) -C $(LUAOT_DIR) clean
 
 luaot: $(LUAOT)
+teal: $(TEAL)
 
 cfiles: $(GENERATED_C_FILES)
 objects: $(OBJECT_FILES)
@@ -69,9 +68,10 @@ shared:
 	$(MAKE) release BUILD_STATIC=0
 
 run: debug
-	$(TEAL) run src/$(MAIN_FILE).tl
+	$(TEAL_ENV) $(LUA) $(TL) run src/$(MAIN_FILE).tl
 
-ifdef LUA
+
+ifneq ($(LUA),$(LUAOT_DIR)/src/lua)
 check-lua: $(LUAOT)
 	./check-lua.sh $(LUA) $(LUAOT_DIR)/src/lua
 else
@@ -84,10 +84,18 @@ $(LUAOT):
 	$(MAKE) -C $(LUAOT_DIR) guess
 
 #first, a rule for compiling teal files to lua
+ifneq ($(TL),$(TEAL_DIR)/tl)
 $(GEN_DIR)/%.lua: $(SRC_DIR)/%.tl
+else
+$(GEN_DIR)/%.lua: $(SRC_DIR)/%.tl $(LUAOT)
+endif
 	@printf "\x1b[1;35mTranspiling \x1b[1;32m$<\x1b[1;35m to \x1b[1;32m$@\x1b[0m\n"
 	@mkdir -p $(GEN_DIR)
-	$(TEAL) -I$(SRC_DIR) $(TLFLAGS) gen $< -o $@
+ifneq ($(TL),$(TEAL_DIR)/tl)
+	$(TL) -I$(SRC_DIR) $(TLFLAGS) gen $< -o $@
+else
+	$(TEAL_ENV) $(LUA) $(TL) -I$(SRC_DIR) $(TLFLAGS) gen $< -o $@
+endif
 
 #then, a rule for compiling lua files to c, if the file is MAIN_FILE then we need to use the -e -i flags aswell
 #use -m to specify the module name, which should be basename of the file
