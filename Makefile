@@ -6,7 +6,20 @@ BIN_DIR = $(BUILD_DIR)/bin
 MAIN_FILE = main
 
 #Statically or dynamically link to lua
+#! WARNING !#
+#If you link with a different lua version than `extern/luaot` (currently Lua 5.4.3, find out by doing `./extern/luaot/src/lua -v`)
+#YOU WILL HAVE UNDEFINED AND BUGGY BEHAVIOUR!
 BUILD_STATIC=1
+
+# ifeq ($(BUILD_STATIC),0)
+# #Compare lua versions if $(LUA) is defined, differing lua versions will likley produce a crash
+# 	ifdef LUA
+# 		ifneq ($(shell $(LUA) -v),$(shell extern/luaot/src/lua -v))
+# 			$(error $(LUA) VERSION MISMATCH! LuaOT uses $(shell extern/luaot/src/lua -v), while provided lua uses $(shell $(LUA) -v)!)
+# 			$(error THIS IS LIKLEY TO PRODUCE CRASHES!)
+# 		endif
+# 	endif
+# endif
 
 LUA_LIBDIR=/usr/local/lib/
 
@@ -35,7 +48,7 @@ GENERATED_C_FILES = $(TEAL_FILES:$(SRC_DIR)/%.tl=$(GEN_DIR)/%.c)
 
 OBJECT_FILES = $(GENERATED_C_FILES:$(GEN_DIR)/%.c=$(OBJ_DIR)/%.o)
 
-.PHONY: all clean release debug cfiles objects luaot shared run
+.PHONY: all clean release debug cfiles objects luaot shared run check-lua
 # Just the lua files
 debug: $(GENERATED_LUA_FILES)
 
@@ -49,7 +62,7 @@ luaot: $(LUAOT)
 cfiles: $(GENERATED_C_FILES)
 objects: $(OBJECT_FILES)
 
-release: $(BIN_DIR)/$(MAIN_FILE)
+release: check-lua $(BIN_DIR)/$(MAIN_FILE)
 
 #Make `release` but with` BUILD_STATIC=0`
 shared:
@@ -57,6 +70,13 @@ shared:
 
 run: debug
 	$(TEAL) run src/$(MAIN_FILE).tl
+
+ifdef LUA
+check-lua: $(LUAOT)
+	./check-lua.sh $(LUA) $(LUAOT_DIR)/src/lua
+else
+check-lua:
+endif
 
 #git submodule, run `make guess` in that directory to build it
 $(LUAOT):
