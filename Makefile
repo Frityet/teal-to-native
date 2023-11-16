@@ -76,7 +76,12 @@ endif
 #git submodule, run `make guess` in that directory to build it
 $(LUAOT):
 	@printf "\x1b[1;35mCompiling LuaOT...\x1b[0m\n"
+
+ifeq ($(shell uname -o),Cygwin)
+	$(MAKE) -C $(LUAOT_DIR) posix
+else
 	$(MAKE) -C $(LUAOT_DIR) guess
+endif
 
 #first, a rule for compiling teal files to lua
 $(GEN_DIR)/%.lua: $(SRC_DIR)/%.tl
