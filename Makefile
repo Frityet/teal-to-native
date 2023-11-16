@@ -22,7 +22,7 @@ LD=$(CC)
 LUA=$(LUAOT_DIR)/src/lua
 
 CFLAGS=-Os
-LDFLAGS=-flto
+LDFLAGS=
 ifeq ($(BUILD_STATIC),1)
 	LDFLAGS += -L$(LUAOT_DIR)/src -llua
 else
