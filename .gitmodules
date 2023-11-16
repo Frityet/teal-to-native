@@ -1,0 +1,3 @@
+[submodule "extern/luaot"]
+	path = extern/luaot
+	url = https://github.com/Frityet/lua-aot-5.4
