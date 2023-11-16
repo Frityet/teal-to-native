@@ -29,6 +29,8 @@ else
 	LDFLAGS += -L$(LUA_LIBDIR) -llua
 endif
 
+LDFLAGS += -lc -lm -ldl
+
 TLFLAGS=
 LUAOTFLAGS=
 LUAOT_MAIN_FLAGS=-i posix -e
