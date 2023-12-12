@@ -7,7 +7,7 @@ MAIN_FILE = main
 
 #Statically or dynamically link to lua
 #! WARNING !#
-#If you link with a different lua version than `extern/luaot` (currently Lua 5.4.3, find out by doing `./extern/luaot/src/lua -v`)
+#If you link with a different lua version than `extern/lua-aot` (currently Lua 5.4.3, find out by doing `./extern/luaot/src/lua -v`)
 #YOU WILL HAVE UNDEFINED AND BUGGY BEHAVIOUR!
 BUILD_STATIC=1
 
@@ -20,7 +20,7 @@ else
 endif
 
 
-LUAOT_DIR=./extern/luaot
+LUAOT_DIR=./extern/lua-aot
 LUAOT=$(LUAOT_DIR)/src/luaot
 
 TL=tl
