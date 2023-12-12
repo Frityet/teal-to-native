@@ -12,6 +12,13 @@ MAIN_FILE = main
 BUILD_STATIC=1
 
 LUA_LIBDIR=/usr/local/lib/
+#Target for building lua
+ifeq ($(shell uname -o),Cygwin)
+	LUA_TARGET=posix
+else
+	LUA_TARGET=guess
+endif
+
 
 LUAOT_DIR=./extern/luaot
 LUAOT=$(LUAOT_DIR)/src/luaot
@@ -78,12 +85,7 @@ endif
 #git submodule, run `make guess` in that directory to build it
 $(LUAOT):
 	@printf "\x1b[1;35mCompiling LuaOT...\x1b[0m\n"
-
-ifeq ($(shell uname -o),Cygwin)
-	$(MAKE) -C $(LUAOT_DIR) posix
-else
-	$(MAKE) -C $(LUAOT_DIR) guess
-endif
+	$(MAKE) -C $(LUAOT_DIR) $(LUA_TARGET)
 
 #first, a rule for compiling teal files to lua
 $(GEN_DIR)/%.lua: $(SRC_DIR)/%.tl
