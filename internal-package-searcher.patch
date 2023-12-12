@@ -1,8 +1,8 @@
---- luaot.1.c	2023-12-11 19:59:27
-+++ luaot.c	2023-12-11 18:55:47
+--- src/luaot.c	2023-12-11 19:59:27
++++ src/luaot.c	2023-12-11 18:55:47
 @@ -40,6 +40,13 @@
  static TString **tmname;
- 
+
  int executable = 0;
 +
 +enum {
@@ -46,7 +46,7 @@
 +static void print_internal_searcher_windows();
 +static void print_internal_searcher_posix();
  static void print_source_code();
- 
+
  int main(int argc, char **argv)
 @@ -189,6 +209,10 @@
      #endif
@@ -117,7 +117,7 @@
 +    println("  return 1;");
 +    println("}");
  }
- 
+
  static
 +void print_internal_searcher_posix()
 +{
@@ -158,7 +158,7 @@
      // Since the code we are generating is lifted from lvm.c, we need it to use
 @@ -806,4 +910,4 @@
      println("};");
- 
+
      fclose(infile);
 -}
 \ No newline at end of file

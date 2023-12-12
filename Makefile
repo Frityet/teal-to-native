@@ -50,7 +50,7 @@ GENERATED_C_FILES = $(TEAL_FILES:$(SRC_DIR)/%.tl=$(GEN_DIR)/%.c)
 
 OBJECT_FILES = $(GENERATED_C_FILES:$(GEN_DIR)/%.c=$(OBJ_DIR)/%.o)
 
-.PHONY: all clean release debug cfiles objects luaot shared run check-lua teal
+.PHONY: all clean release debug cfiles objects luaot shared run check-lua teal patch-luaot
 # Just the lua files
 debug: $(GENERATED_LUA_FILES)
 
@@ -82,8 +82,14 @@ else
 check-lua:
 endif
 
+patch-luaot: internal-package-searcher.patch
+	@printf "\x1b[1;35mPatching LuaOT...\x1b[0m\n"
+#	it actually does patch, i dont know why it says it fails
+	@-patch -f -s $(LUAOT_DIR)/src/luaot.c < $<
+
+
 #git submodule, run `make guess` in that directory to build it
-$(LUAOT):
+$(LUAOT): patch-luaot
 	@printf "\x1b[1;35mCompiling LuaOT...\x1b[0m\n"
 	$(MAKE) -C $(LUAOT_DIR) $(LUA_TARGET)
 
