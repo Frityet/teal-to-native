@@ -1,0 +1,6 @@
+{
+    "teal.compilerPath": "extern/teal/tl",
+    "clangd.fallbackFlags": [
+        "-Iextern/lua-aot/src"
+    ]
+}

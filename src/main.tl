@@ -1,3 +1,5 @@
 local mod = require("module")
-print "Hello, World!"
-for i in mod.range(1, 100) do print(i) end
+local cmodule = require("cmodule")
+
+cmodule.hello "World"
+for i in mod.range(1, 5) do print(i) end
