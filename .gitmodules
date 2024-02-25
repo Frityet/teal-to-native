@@ -1,3 +1,4 @@
 [submodule "extern/lua-aot"]
 	path = extern/lua-aot
-	url = https://github.com/hugomg/lua-aot-5.4
+	url = https://github.com/Frityet/lua-aot-5.4
+	branch = self-loader
