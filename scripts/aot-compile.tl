@@ -1,13 +1,14 @@
 local ansi<const> = require("cyan.ansi")
 local colorstring<const> = require("cyan.colorstring")
 local fs<const> = require("cyan.fs")
+local config<const> = require("cyan.config")
 local log<const> = require("cyan.log")
 local utilities<const> = require("cyan.util")
 local keys<const> = utilities.tab.keys
 
 local root<const> = fs.cwd()
 local is_windows<const> = fs.path.separator == "\\"
-local build_dir<const> = root.."build-aot/"
+local build_dir<const> = root.."build/"
 local ok, err = build_dir:mkdir()
 if err ~= "File exists" then assert(ok, err) end
 
@@ -20,18 +21,20 @@ local function module_name(path: fs.Path): string
     return (path:tostring():gsub("%.lua$", ""):gsub("/", "."):gsub("%.init$", ""))
 end
 
+local cfgs = config.load() as {string:{string | nil}}
+local additional_cflags<const> = cfgs.cflags or {}
+local additional_ldflags<const> = cfgs.ldflags or {}
+
 local cflags<const>: {string} = {
-    "-std=c99",
-    "-w",
-    "-Os",
     "-I"..(root.."extern/lua-aot/src"):to_real_path(),
+    table.unpack(additional_cflags),
 }
 
 local ldflags<const>: {string} = {
     "-L"..(root.."extern/lua-aot/src"):to_real_path(),
     "-llua",
     "-fPIC",
-    "-flto",
+    table.unpack(additional_ldflags),
 }
 
 local c_compiler, linker: string, string do
@@ -57,9 +60,16 @@ local info = log.create_logger(
    colorstring.highlight({ansi.color.bright.cyan}, "...")
 )
 
+local shell = log.create_logger(
+   io.stdout,
+   "normal",
+   colorstring.highlight({ansi.color.bright.magenta}, "$"),
+   colorstring.highlight({ansi.color.bright.magenta}, "...")
+)
+
 local function execute(cmd: string | {string})
     local cmd_str = (cmd is {string}) and table.concat(cmd, " ") or cmd as string
-    -- shell(cmd_str)
+    shell(cmd_str)
     local ok, err = os.execute(cmd_str)
     if not ok then
         error("Failed to execute "..cmd_str.."!\n\tReason: "..err)
@@ -76,8 +86,8 @@ end
 
 local luaot_path<const> = root.."extern/lua-aot/src/"..(is_windows and "luaot.exe" or "luaot")
 local function compile_lua(script: fs.Path, out_dir: fs.Path, is_main: boolean): string, string | nil
-    local out = out_dir..(string.format("%x", hash(tostring(script)))..'.c')
-    info("Compiling ", script, " to ", out)
+    local out = out_dir..(string.format("luaot_%x_module", hash(tostring(script)))..'.c')
+    info("Compiling ", script, " to ", out:relative_to(root))
     local args: {string} = {
         luaot_path:to_real_path(), script:to_real_path(),
         "-m", module_name(script),
@@ -95,7 +105,7 @@ local function compile_lua(script: fs.Path, out_dir: fs.Path, is_main: boolean):
     return out:to_real_path()
 end
 
-assert(fs.chdir("build"))
+assert(fs.chdir(build_dir))
 local c_module_paths: {string} = {}
 for path in fs.scan_dir("./", { "**/*.lua" }) do
     local c_path, err = compile_lua(path, build_dir, path:match("**/main.lua"))
@@ -117,7 +127,7 @@ mkdir "obj"
 local obj_paths: {string} = {}
 for _, c_path in ipairs(c_module_paths) do
     local obj_path = fs.path.new("obj")..(c_path:match("([^/\\]+)$")..".o")
-    info("Compiling ", c_path, " to ", obj_path)
+    info("Compiling ", fs.path.new(c_path):relative_to(root):to_real_path(), " to ", obj_path)
     local cmd = table.concat({
         c_compiler, "-c",
         "-o", obj_path:to_real_path(),

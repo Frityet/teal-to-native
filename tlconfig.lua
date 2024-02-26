@@ -6,13 +6,21 @@ return {
         "src/",
         "lua_modules/share/lua/5.4/"
     },
-    include = {
-        "src/**/*.lua"
-    },
     gen_compat = "off",
     scripts = {
         build = {
             post = "scripts/aot-compile.tl"
         }
+    },
+    dont_prune = {
+        "build/bin",
+        "build/bin/main",
+    },
+    cflags = {
+        "-Os",
+    },
+    ldflags = {
+        "-fPIC",
+        "-flto"
     }
 }
