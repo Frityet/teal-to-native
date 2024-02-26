@@ -31,7 +31,7 @@ echo %LR_DEFAULT_VER% > .luarocks\default-lua-version.lua
 
 :: Assuming GNU make is available in your PATH
 cd extern\lua-aot
-make PLAT=guess install INSTALL_TOP=..\..\build
+make PLAT=guess install INSTALL_TOP=".\build"
 cd ..\..
 
 endlocal
