@@ -22,5 +22,6 @@ return {
     ldflags = {
         "-fPIC",
         "-flto"
-    }
+    },
+    aot_verbose = false
 }
