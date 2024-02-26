@@ -18,6 +18,9 @@ variables = {
 "
 LR_DEFAULT_VER="return '5.4'"
 
+make -C extern/lua-aot PLAT=guess
+make -C extern/lua-aot PLAT=guess install INSTALL_TOP=../build
+
 # base files
 luarocks init
 
@@ -30,5 +33,3 @@ luarocks init --reset
 
 echo "$CONFIG_54" > .luarocks/config-5.4.lua
 echo "$LR_DEFAULT_VER" > .luarocks/default-lua-version.lua
-
-make -C extern/lua-aot PLAT=guess install INSTALL_TOP=../build
