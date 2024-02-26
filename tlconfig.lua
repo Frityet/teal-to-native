@@ -6,6 +6,9 @@ return {
         "src/",
         "lua_modules/share/lua/5.4/"
     },
+    include = {
+        "src/**/*.lua"
+    },
     gen_compat = "off",
     scripts = {
         build = {
