@@ -4,3 +4,4 @@ build/
 /lua
 /lua_modules
 /.luarocks
+build-aot/

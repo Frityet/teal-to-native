@@ -16,5 +16,6 @@ dependencies = {
    "lua ~> 5.4"
 }
 build = {
-   type = "cyan",
+   type = "builtin",
+   modules = {}
 }

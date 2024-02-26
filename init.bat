@@ -19,7 +19,6 @@ set LR_DEFAULT_VER=return '5.4'
 :: Assuming GNU make is available in your PATH
 cd extern\lua-aot
 make PLAT=guess
-make PLAT=guess install INSTALL_TOP=".\build"
 cd ..\..
 
 :: base files
