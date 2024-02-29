@@ -9,13 +9,12 @@ description = {
    license = "MIT"
 }
 build_dependencies = {
-   "luarocks-build-cyan",
    "cyan"
 }
 dependencies = {
    "lua ~> 5.4"
 }
 build = {
-   type = "builtin",
-   modules = {}
+   type = "command",
+   build_command = "cyan build"
 }

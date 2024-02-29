@@ -17,19 +17,31 @@ local function mkdir(path: string): boolean, string
     return fs.path.new(path):mkdir()
 end
 
-local cfgs = config.load() as {string:{string | nil}}
-local additional_cflags<const> = cfgs.cflags or {}
-local additional_ldflags<const> = cfgs.ldflags or {}
-local verbose<const> = not not cfgs.aot_verbose
+local record AOTOptions
+    cflags: {string}
+    ldflags: {string}
+    verbose: boolean
+    include_luarocks_modules: boolean
+end
+
+local cfgs = config.load() as {string:any}
+local opts<const> = cfgs.aot_options as AOTOptions or {}
+opts.cflags = opts.cflags or {}
+opts.ldflags = opts.ldflags or {}
+opts.verbose = not not opts.verbose
+opts.include_luarocks_modules = not not opts.include_luarocks_modules
+-- local additional_cflags<const> = cfgs.cflags or {}
+-- local additional_ldflags<const> = cfgs.ldflags or {}
+-- local verbose<const> = not not cfgs.aot_verbose
 
 local cflags<const>: {string} = {
     "-I"..(root.."extern/lua-aot/src"):to_real_path(),
-    table.unpack(additional_cflags),
+    table.unpack(opts.cflags),
 }
 
 local ldflags<const>: {string} = {
     "-L"..(root.."extern/lua-aot/src"):to_real_path(), "-llua",
-    table.unpack(additional_ldflags),
+    table.unpack(opts.ldflags),
 }
 
 local c_compiler, linker: string, string do
@@ -64,7 +76,7 @@ local shell = log.create_logger(
 
 local function execute(cmd: string | {string})
     local cmd_str = (cmd is {string}) and table.concat(cmd, " ") or cmd as string
-    if verbose then shell(cmd_str) end
+    if opts.verbose then shell(cmd_str) end
     local ok, err = os.execute(cmd_str)
     if not ok then
         error("Failed to execute "..cmd_str.."!\n\tReason: "..err)
@@ -107,7 +119,7 @@ local function compile_c(c_path: fs.Path, module_list: {string : CModuleDefiniti
     info("Compiling ", c_path:relative_to(root), " to ", to:relative_to(root))
 
     --get the filename, if it starts with tl_ then it's a luaot module and we should enable `-w`
-    local is_tl_mod = not not c_path:tostring():match("tl_")
+    local is_tl_mod = not not c_path:tostring():match("tl_") or not not c_path:tostring():match("lrmod_")
 
     local modlist = "-D'LUAOT_INTERNAL_SEARCHER_MODULES="
     local first = true
@@ -166,6 +178,22 @@ for path in fs.scan_dir("./", { "**/*.lua" }) do
     }
 end
 assert(fs.chdir(root))
+
+if opts.include_luarocks_modules then
+    assert(fs.chdir(lua_mod_dir))
+    for path in fs.scan_dir("./", { "**/*.lua" }) do
+        local mod = require_path(path)
+        local symname = string.format("lrmod_%x", hash(path:to_real_path()))
+        local c_out = build_dir..fs.path.new("lrmod_"..mod..".c")
+        compile_lua(path, symname, c_out, false)
+
+        c_modules[mod] = {
+            symbol = symname,
+            path = c_out,
+        }
+    end
+    assert(fs.chdir(root))
+end
 
 --any .c files also are compiled
 for path in fs.scan_dir("./src", {"**/*.c"}) do

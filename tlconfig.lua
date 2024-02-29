@@ -16,12 +16,15 @@ return {
         "build/bin",
         "build/bin/main",
     },
-    cflags = {
-        "-Os",
-    },
-    ldflags = {
-        "-fPIC",
-        "-flto"
-    },
-    aot_verbose = false
+    aot_options = {
+        cflags = {
+            "-Os",
+        },
+        ldflags = {
+            "-fPIC",
+            "-flto"
+        },
+        verbose = false,
+        include_luarocks_modules = true,
+    }
 }
