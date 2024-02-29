@@ -167,13 +167,12 @@ local function compile_c(mod: CModuleDefinition, module_list: {string : CModuleD
     end
     modlist = modlist.."'"
 
-    local wrn = is_tl_mod and "-w" or ""
     local cmd = table.concat({
         c_compiler, "-c",
         modlist,
         "-o", to:to_real_path(),
         mod.path:to_real_path(),
-        wrn,
+        is_tl_mod and "-w" or "",
         table.unpack(cflags)
     }, " ")
     execute(cmd)
