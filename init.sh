@@ -18,7 +18,7 @@ variables = {
 "
 LR_DEFAULT_VER="return '5.4'"
 
-make -C extern/lua-aot guess
+make -j -C extern/lua-aot guess
 
 # base files
 luarocks init

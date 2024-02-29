@@ -94,12 +94,13 @@ end
 local record CModuleDefinition
     symbol: string
     path:   fs.Path
+    dependents: {string}
 end
 
 local luaot_path<const> = root.."extern/lua-aot/src/"..(is_windows and "luaot.exe" or "luaot")
 local function compile_lua(script: fs.Path, module_name: string, to: fs.Path, is_main: boolean)
     info("Transpiling ", script, " to ", to:relative_to(root))
-    local args: {string} = {
+    local args = {
         luaot_path:to_real_path(), script:to_real_path(),
         "-m", module_name,
         "-o", to:to_real_path(),
@@ -115,11 +116,11 @@ local function compile_lua(script: fs.Path, module_name: string, to: fs.Path, is
     execute(cmd)
 end
 
-local function compile_c(c_path: fs.Path, module_list: {string : CModuleDefinition}, to: fs.Path)
-    info("Compiling ", c_path:relative_to(root), " to ", to:relative_to(root))
+local function compile_c(mod: CModuleDefinition, module_list: {string : CModuleDefinition}, to: fs.Path)
+    info("Compiling ", mod.path:relative_to(root), " to ", to:relative_to(root))
 
     --get the filename, if it starts with tl_ then it's a luaot module and we should enable `-w`
-    local is_tl_mod = not not c_path:tostring():match("tl_") or not not c_path:tostring():match("lrmod_")
+    local is_tl_mod = not not mod.path:tostring():match("tl_") or not not mod.path:tostring():match("lrmod_")
 
     local modlist = "-D'LUAOT_INTERNAL_SEARCHER_MODULES="
     local first = true
@@ -139,10 +140,22 @@ local function compile_c(c_path: fs.Path, module_list: {string : CModuleDefiniti
         c_compiler, "-c",
         modlist,
         "-o", to:to_real_path(),
-        c_path:to_real_path(),
+        mod.path:to_real_path(),
         table.unpack(cflags)
     }, " ")
     execute(cmd)
+
+    if mod.dependents then
+        for i, dep in ipairs(mod.dependents) do
+            local fname = (to:ancestors()()..(dep:gsub("%.c$", ".o"))):to_real_path()
+            execute(table.concat({
+                c_compiler, "-c",
+                dep,
+                "-o", fname,
+                table.unpack(cflags)
+            }, " "))
+        end
+    end
 end
 
 local function link_objects(obj_paths: {fs.Path}, to: fs.Path)
@@ -172,9 +185,17 @@ for path in fs.scan_dir("./", { "**/*.lua" }) do
     local c_out = fs.path.new("tl_"..mod..".c")
     compile_lua(path, symname, c_out, mod == "main")
 
+    --all of the generated tl_%x_magic_function_%d files
+    local dependent_funcs: {string} = {}
+    for path in fs.scan_dir("./", { string.format("%s_magic_function_*.c", symname) }) do
+        info("Found dependent func: ", path)
+        table.insert(dependent_funcs, path:to_real_path())
+    end
+
     c_modules[mod] = {
         symbol = symname,
         path = build_dir..c_out,
+        dependents = dependent_funcs
     }
 end
 assert(fs.chdir(root))
@@ -212,8 +233,15 @@ objdir:mkdir()
 local obj_paths: {fs.Path} = {}
 for mod, def in pairs(c_modules) do
     local obj_path = objdir..(mod..".o")
-    compile_c(def.path, c_modules, obj_path)
+    compile_c(def, c_modules, obj_path)
     table.insert(obj_paths, obj_path)
+
+    if def.dependents then
+        for i, dep in ipairs(def.dependents) do
+            local deppath = objdir..(dep:gsub("%.c$", ".o"))
+            table.insert(obj_paths, deppath)
+        end
+    end
 end
 
 mkdir "bin"

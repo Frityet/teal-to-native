@@ -25,6 +25,6 @@ return {
             "-flto"
         },
         verbose = false,
-        include_luarocks_modules = true,
+        include_luarocks_modules = false,
     }
 }
